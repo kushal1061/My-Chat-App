@@ -2,10 +2,20 @@ const WebSocket = require('ws');
 const websocketClients=require('./clients')
 const handleMessage=require("./messageHandler")
 module.exports = () => {
+    const port = process.env.WS_PORT ? Number(process.env.WS_PORT) : 8000;
     const wss = new WebSocket.Server({
         host: '0.0.0.0',  // Listen on all network interfaces
-        port: 8080
+        port
     })
+    wss.on('error', (err) => {
+        console.error('WebSocket server error:', err);
+        if (err && err.code === 'EADDRINUSE') {
+            console.error(`Port ${port} in use. WebSocket server not started.`);
+        }
+    });
+    wss.on('listening', () => {
+        console.log(`WebSocket server listening on port ${port}`);
+    });
     wss.on('connection', (ws) => {
         console.log("websocket connection established")
         ws.on('message', async (message) => {

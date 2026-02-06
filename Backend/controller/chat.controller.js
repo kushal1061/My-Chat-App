@@ -1,6 +1,7 @@
 const User=require("../model/user")
 const Message=require('../model/messages')
-const Chat=require("../model/chats")
+const Chat=require("../model/chats");
+const messages = require("../model/messages");
 exports.getChat=async (req,res)=>{
     const user=req.body.user;
     const chatId = req.body.chatId;
@@ -40,6 +41,8 @@ exports.createChat=async(req,res)=>{
             participants: participants
         });
         const savedChat = await newChat.save();
-        res.json(savedChat);
-        
+        res.json({
+            chatId: savedChat._id,
+            messages: []
+}); 
 }

@@ -11,7 +11,7 @@ const s3 = new S3Client({
     secretAccessKey: process.env.AWS_KEY,
   },
 });
-module.exports =async ({ region, bucket, key }) => {
+exports.getUrl =async ({ region, bucket, key }) => {
   const command = new PutObjectCommand({ Bucket: bucket, Key: key });
   return await getSignedUrl(s3, command, { expiresIn: 3600 });
 };

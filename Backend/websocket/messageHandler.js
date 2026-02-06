@@ -62,6 +62,10 @@ async function handleChat(ws, payload) {
             chatId,
             text: payload.text,
         })
+        const chatUpdate = await Chat.findOneAndUpdate(
+            { _id: chatId },
+            { lastmessage: newMsg._id }
+        );
         console.log(newMsg);
         newMsg.save().then(() => console.log("saved")).catch(e => consol.log(e));
         for (const receiver of receivers) {

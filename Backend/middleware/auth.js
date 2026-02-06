@@ -8,6 +8,7 @@ module.exports = async (req, res, next) => {
     const user = await User.findById(decoded.userId);
     if (!user) return res.status(401).json({ message: "Invalid token" });
     req.body.user = user;
+    console.log("Authenticated user:", user);
     next();
   } catch (err) {
     res.status(401).json({ message: "Unauthorized" });
