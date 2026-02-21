@@ -5,7 +5,6 @@ const User=require('../model/user')
 const jwt = require("jsonwebtoken")
 const webSocket = require('ws');
 async function sendPendingmsg(phone) {
-    console.log("reached at 1");
     const userChats = await Chat.find({
         participants: phone
     }).select("_id");
@@ -98,7 +97,7 @@ async function handleAuth(ws, payload) {
         }
         const phone = user.phone;
         websocketClients[phone] = ws;
-        console.log("User authenticated:", payload.phone);
+        // console.log("User authenticated:", payload.phone);
         console.log(process.env.JWT_SECRET)
     }
     catch (e) {

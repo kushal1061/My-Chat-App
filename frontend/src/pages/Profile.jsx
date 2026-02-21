@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
 
 const DEFAULT_PROFILE = {
@@ -14,6 +15,7 @@ export default function Profile() {
   const [profile, setProfile] = useState({ ...DEFAULT_PROFILE, phone: storedPhone });
   const [photo, setPhoto] = useState("");
   const [saved, setSaved] = useState(false);
+  const[user,setUser]=useState('');
   const initials = useMemo(() => {
     const base = profile.name || "You";
     return base
@@ -23,21 +25,20 @@ export default function Profile() {
       .slice(0, 2)
       .toUpperCase();
   }, [profile.name]);
-
+  
   useEffect(() => {
-    const storedProfile = localStorage.getItem("profile");
-    const storedPhoto = localStorage.getItem("profilePhoto");
-    if (storedProfile) {
-      try {
-        const parsed = JSON.parse(storedProfile);
-        setProfile((prev) => ({ ...prev, ...parsed }));
-      } catch (err) {
-        console.warn("Failed to parse profile from storage", err);
-      }
-    }
-    if (storedPhoto) setPhoto(storedPhoto);
+    getDetails();
   }, []);
-
+  const getDetails = async () => {
+    const token = localStorage.getItem('token');
+    const details =await axios.get(`http://localhost:5000/api/user/me`,{
+      headers:{
+        Authorization : `Bearer ${token}`
+      }
+    });
+    console.log(details.data);
+    setUser(details.data  );
+  };
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
@@ -119,8 +120,8 @@ export default function Profile() {
                 </span>
               </div>
               <div>
-                <h2 className="text-lg font-semibold">{profile.name || "Your Name"}</h2>
-                <p className="text-sm text-[#6d5f52]">{profile.status}</p>
+                <h2 className="text-lg font-semibold">{user?.name || "Your Name"}</h2>
+                <p className="text-sm text-[#6d5f52]">{user?.status || "No status set"}</p>
               </div>
               <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#1f1a1a] text-sm cursor-pointer hover:bg-[#1f1a1a] hover:text-white transition">
                 Change photo
@@ -138,7 +139,7 @@ export default function Profile() {
                   Quick notes
                 </p>
                 <div className="bg-[#fef7ec] border border-[#f0d5aa] rounded-xl p-3 text-sm text-[#5b5144]">
-                  Keep it real. Short bios help your contacts recognize you instantly.
+                      {user?.bio || "Add a short intro, hobbies, or a note for your contacts."}
                 </div>
               </div>
             </div>
@@ -179,7 +180,7 @@ export default function Profile() {
                   type="email"
                   value={profile.email}
                   onChange={handleChange}
-                  placeholder="you@email.com"
+                  placeholder={user?.email || "you@email.com"}
                   className="rounded-xl border border-[#ead8c3] bg-[#fffaf2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f0c27b]"
                 />
               </div>
@@ -191,7 +192,7 @@ export default function Profile() {
                   name="phone"
                   value={profile.phone}
                   onChange={handleChange}
-                  placeholder="Phone number"
+                  placeholder={user?.phone || "Phone number"}
                   className="rounded-xl border border-[#ead8c3] bg-[#fffaf2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f0c27b]"
                 />
               </div>
@@ -203,7 +204,7 @@ export default function Profile() {
               </label>
               <textarea
                 name="bio"
-                value={profile.bio}
+                value={user?.bio || profile.bio}
                 onChange={handleChange}
                 placeholder="Share a short intro, hobbies, or a note for your contacts."
                 rows={5}

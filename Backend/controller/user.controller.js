@@ -138,3 +138,7 @@ exports.changeProfilePic = async (req, res) => {
         }
     )
 }
+exports.me=async(req,res)=>{
+    const user=req.user;
+    res.json(user);
+}
