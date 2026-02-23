@@ -84,7 +84,7 @@ function Call() {
 
   // ---------------- WS CONNECT ----------------
   useEffect(() => {
-    wsRef.current = new WebSocket("ws://192.168.20.76:8000");
+    wsRef.current = new WebSocket("wss://kushalpal.duckdns.org/ws");
 
     wsRef.current.onopen = () => {
       console.log("WS connected");
