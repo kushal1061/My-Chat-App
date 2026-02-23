@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { ArrowLeft, Camera, Trash2, User, Mail, Phone, Activity } from "lucide-react";
+import toast from "react-hot-toast";
+import Avatar from "../components/ui/Avatar";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
+import ThemeToggle from "../components/ui/ThemeToggle";
 
 const DEFAULT_PROFILE = {
   name: "",
@@ -14,8 +20,9 @@ export default function Profile() {
   const storedPhone = localStorage.getItem("phone") || "";
   const [profile, setProfile] = useState({ ...DEFAULT_PROFILE, phone: storedPhone });
   const [photo, setPhoto] = useState("");
-  const [saved, setSaved] = useState(false);
-  const[user,setUser]=useState('');
+  const [user, setUser] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   const initials = useMemo(() => {
     const base = profile.name || "You";
     return base
@@ -25,20 +32,24 @@ export default function Profile() {
       .slice(0, 2)
       .toUpperCase();
   }, [profile.name]);
-  
+
   useEffect(() => {
     getDetails();
   }, []);
+
   const getDetails = async () => {
-    const token = localStorage.getItem('token');
-    const details =await axios.get(`http://localhost:5000/api/user/me`,{
-      headers:{
-        Authorization : `Bearer ${token}`
-      }
-    });
-    console.log(details.data);
-    setUser(details.data  );
+    const token = localStorage.getItem("token");
+    try {
+      const details = await axios.get("http://localhost:5000/api/user/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(details.data);
+      setProfile((prev) => ({ ...prev, ...details.data }));
+    } catch (error) {
+      toast.error("Failed to load profile details");
+    }
   };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
@@ -49,182 +60,152 @@ export default function Profile() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const result = reader.result?.toString() || "";
-      setPhoto(result);
+      setPhoto(reader.result?.toString() || "");
+      toast.success("Photo updated (unsaved)");
     };
     reader.readAsDataURL(file);
   };
 
   const handleRemovePhoto = () => {
     setPhoto("");
+    toast.success("Photo removed");
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    localStorage.setItem("profile", JSON.stringify(profile));
-    localStorage.setItem("profilePhoto", photo);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2200);
+    setIsLoading(true);
+    setTimeout(() => {
+      localStorage.setItem("profile", JSON.stringify(profile));
+      localStorage.setItem("profilePhoto", photo);
+      toast.success("Profile updated successfully!");
+      setIsLoading(false);
+    }, 1000);
   };
 
   return (
-    <div
-      className="min-h-screen bg-[#f6f1e9] text-[#1f1a1a] relative overflow-hidden"
-      style={{ fontFamily: '"Space Grotesk", sans-serif' }}
-    >
-      <div className="absolute -top-24 -left-20 h-64 w-64 rounded-full bg-[#f0c27b] blur-3xl opacity-50" />
-      <div className="absolute top-40 -right-32 h-72 w-72 rounded-full bg-[#7dd3c7] blur-3xl opacity-40" />
-      <div className="absolute bottom-0 left-20 h-64 w-64 rounded-full bg-[#f7a8a8] blur-3xl opacity-40" />
-
-      <div className="relative max-w-5xl mx-auto px-4 py-10">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-[#7a6a56]">
-              Profile Studio
-            </p>
-            <h1 className="text-3xl md:text-4xl font-semibold">
-              Shape your presence
-            </h1>
-            <p className="text-sm text-[#5b5144] mt-2">
-              Update your photo and keep your details fresh for every chat.
-            </p>
+    <div className="min-h-screen bg-surface-secondary">
+      {/* Top bar */}
+      <div className="sticky top-0 z-10 glass border-b border-border">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="p-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-tertiary transition-all"
+            >
+              <ArrowLeft size={20} />
+            </Link>
+            <h1 className="font-semibold text-text-primary text-lg">Profile</h1>
           </div>
-          <Link
-            to="/"
-            className="px-4 py-2 border border-[#1f1a1a] text-sm rounded-full hover:bg-[#1f1a1a] hover:text-white transition"
-          >
-            Back to chat
-          </Link>
+          <ThemeToggle />
         </div>
+      </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6"
-        >
-          <div className="bg-white/80 backdrop-blur border border-[#e5d8c5] rounded-2xl p-6 shadow-[0_18px_40px_rgba(31,26,26,0.12)]">
-            <div className="flex flex-col items-center text-center gap-4">
-              <div className="relative">
-                <div className="h-28 w-28 rounded-full bg-[#1f1a1a] text-white flex items-center justify-center text-3xl">
-                  {photo ? (
-                    <img
-                      src={photo}
-                      alt="Profile preview"
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  ) : (
-                    initials
-                  )}
-                </div>
-                <span className="absolute -bottom-2 -right-2 bg-[#f0c27b] text-[#1f1a1a] text-xs font-semibold px-2 py-1 rounded-full">
-                  Live
-                </span>
+      <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
+        {/* Avatar card */}
+        <div className="bg-surface rounded-2xl border border-border p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-2xl border-2 border-border bg-surface-tertiary flex items-center justify-center text-2xl font-bold text-text-tertiary overflow-hidden">
+                {photo ? (
+                  <img src={photo} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{initials}</span>
+                )}
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">{user?.name || "Your Name"}</h2>
-                <p className="text-sm text-[#6d5f52]">{user?.status || "No status set"}</p>
-              </div>
-              <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#1f1a1a] text-sm cursor-pointer hover:bg-[#1f1a1a] hover:text-white transition">
-                Change photo
+              <label className="absolute -bottom-1 -right-1 p-2 bg-accent text-text-inverse rounded-xl cursor-pointer hover:bg-accent-hover transition-all shadow-soft">
+                <Camera size={14} />
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
               </label>
-              <button
-                type="button"
-                onClick={handleRemovePhoto}
-                className="text-xs uppercase tracking-[0.2em] text-[#6d5f52] hover:text-[#1f1a1a]"
-              >
-                Remove photo
-              </button>
-              <div className="w-full text-left mt-2">
-                <p className="text-xs text-[#6d5f52] uppercase tracking-[0.2em] mb-2">
-                  Quick notes
-                </p>
-                <div className="bg-[#fef7ec] border border-[#f0d5aa] rounded-xl p-3 text-sm text-[#5b5144]">
-                      {user?.bio || "Add a short intro, hobbies, or a note for your contacts."}
-                </div>
-              </div>
+            </div>
+
+            <div className="flex-1 text-center sm:text-left">
+              <h2 className="text-xl font-bold text-text-primary">{profile.name || "Your Name"}</h2>
+              <p className="text-sm text-text-secondary mt-1">{profile.status || "Set a status"}</p>
+              {photo && (
+                <Button
+                  variant="danger"
+                  size="xs"
+                  icon={Trash2}
+                  onClick={handleRemovePhoto}
+                  className="mt-3"
+                >
+                  Remove Photo
+                </Button>
+              )}
             </div>
           </div>
+        </div>
 
-          <div className="lg:col-span-2 bg-white/90 backdrop-blur border border-[#e5d8c5] rounded-2xl p-6 shadow-[0_18px_40px_rgba(31,26,26,0.12)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs uppercase tracking-[0.2em] text-[#6d5f52]">
-                  Display name
-                </label>
-                <input
-                  name="name"
-                  value={profile.name}
-                  onChange={handleChange}
-                  placeholder="Add your name"
-                  className="rounded-xl border border-[#ead8c3] bg-[#fffaf2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f0c27b]"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs uppercase tracking-[0.2em] text-[#6d5f52]">
-                  Status
-                </label>
-                <input
-                  name="status"
-                  value={profile.status}
-                  onChange={handleChange}
-                  placeholder="Available, busy, away..."
-                  className="rounded-xl border border-[#ead8c3] bg-[#fffaf2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f0c27b]"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs uppercase tracking-[0.2em] text-[#6d5f52]">
-                  Email
-                </label>
-                <input
-                  name="email"
-                  type="email"
-                  value={profile.email}
-                  onChange={handleChange}
-                  placeholder={user?.email || "you@email.com"}
-                  className="rounded-xl border border-[#ead8c3] bg-[#fffaf2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f0c27b]"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs uppercase tracking-[0.2em] text-[#6d5f52]">
-                  Phone
-                </label>
-                <input
-                  name="phone"
-                  value={profile.phone}
-                  onChange={handleChange}
-                  placeholder={user?.phone || "Phone number"}
-                  className="rounded-xl border border-[#ead8c3] bg-[#fffaf2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f0c27b]"
-                />
-              </div>
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Personal Info */}
+          <div className="bg-surface rounded-2xl border border-border p-6 md:p-8 space-y-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
+              Personal Info
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                name="name"
+                value={profile.name}
+                onChange={handleChange}
+                label="Display Name"
+                icon={User}
+                placeholder="Add your name"
+              />
+              <Input
+                name="status"
+                value={profile.status}
+                onChange={handleChange}
+                label="Status"
+                icon={Activity}
+                placeholder="Available, busy, away..."
+              />
             </div>
-
-            <div className="mt-5 flex flex-col gap-2">
-              <label className="text-xs uppercase tracking-[0.2em] text-[#6d5f52]">
-                About you
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary mb-1.5">
+                Bio
               </label>
               <textarea
                 name="bio"
-                value={user?.bio || profile.bio}
+                value={profile.bio}
                 onChange={handleChange}
                 placeholder="Share a short intro, hobbies, or a note for your contacts."
-                rows={5}
-                className="rounded-xl border border-[#ead8c3] bg-[#fffaf2] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f0c27b]"
+                rows={3}
+                className="w-full rounded-xl px-4 py-2.5 text-sm bg-surface-tertiary text-text-primary border border-border placeholder:text-text-tertiary focus:border-accent focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent-muted transition-all resize-none"
               />
             </div>
+          </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-4">
-              <button
-                type="submit"
-                className="px-6 py-3 rounded-full bg-[#1f1a1a] text-white text-sm tracking-[0.2em] uppercase hover:bg-[#3a2f2f] transition"
-              >
-                Save changes
-              </button>
-              {saved && (
-                <span className="text-sm text-[#4f7a63]">
-                  Profile updated and saved locally.
-                </span>
-              )}
+          {/* Contact Info */}
+          <div className="bg-surface rounded-2xl border border-border p-6 md:p-8 space-y-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
+              Contact Info
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                name="email"
+                type="email"
+                value={profile.email}
+                onChange={handleChange}
+                label="Email"
+                icon={Mail}
+                placeholder={user?.email || "you@email.com"}
+              />
+              <Input
+                name="phone"
+                value={profile.phone}
+                onChange={handleChange}
+                label="Phone"
+                icon={Phone}
+                placeholder={user?.phone || "Phone number"}
+              />
             </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button type="submit" loading={isLoading} size="lg">
+              Save Changes
+            </Button>
           </div>
         </form>
       </div>

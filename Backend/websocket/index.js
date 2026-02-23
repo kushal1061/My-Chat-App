@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
-const websocketClients=require('./clients')
-const handleMessage=require("./messageHandler")
+const websocketClients = require('./clients')
+const handleMessage = require("./messageHandler")
+const User = require('../model/user')
 module.exports = () => {
     const port = process.env.WS_PORT ? Number(process.env.WS_PORT) : 8000;
     const wss = new WebSocket.Server({
@@ -27,12 +28,49 @@ module.exports = () => {
                 console.log("Invalid JSON:", e);
                 return;
             }
+            if(payload.type=="ice"){
+            wss.clients.forEach(client=>{
+                if(client!==ws && client.readyState===WebSocket.OPEN){
+                    client.send(JSON.stringify({
+                        type:"ice",
+                        data:payload.data,
+                        from:payload.from
+                    }))
+                }});
+        }
+        else if(payload.type==="offer"){
+            wss.clients.forEach(client=>{
+                if(client!==ws && client.readyState===WebSocket.OPEN){
+                    client.send(JSON.stringify({
+                        type:"offer",
+                        data:payload.data,
+                        from:payload.from
+                    }))
+                }});
+        }
+        else if(payload.type==="answer"){
+            wss.clients.forEach(client=>{
+                if(client!==ws && client.readyState===WebSocket.OPEN){
+                    client.send(JSON.stringify({
+                        type:"answer",
+                        data:payload.data,
+                        from:payload.from
+                    }))
+                }});
+        }
             handleMessage(ws, payload);
         })
-        ws.on('close', () => {
+        ws.on('close', async () => {
             console.log("WebSocket connection closed");
-            const phone = Object.keys(websocketClients).find(key => websocketClients[key] === ws);
-            delete websocketClients[phone];
+            const id = Object.keys(websocketClients).find(key => websocketClients[key] === ws);
+            if (id) {
+                const user = await User.findById(id);
+                if (user) {
+                    user.status = "offline";
+                    await user.save();
+                }
+            }
+            delete websocketClients[id];
         });
     })
 }

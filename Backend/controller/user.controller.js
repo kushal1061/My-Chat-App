@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const User = require("../model/user");
+const { upload } = require("./upload.contoller");
 exports.registerUser = async (req, res) => {
     const { name, password, email, phone } = req.body;
     const newUser = new User({
@@ -51,9 +52,9 @@ exports.searchUsers = async (req, res) => {
     const myId = req.body.user._id;
     const ph = req.body.query
     let users = [];
-    try{
+    try {
 
-         users = await User.aggregate([
+        users = await User.aggregate([
             // 1️⃣ Remove self
             {
                 $match: {
@@ -61,42 +62,41 @@ exports.searchUsers = async (req, res) => {
                     $or: [
                         { name: { $regex: ph, $options: "i" } },
                         { phone: { $regex: `^${ph}` } }
-                    ]       
+                    ]
                 }
             },
-            
             // 2️⃣ Find existing chats with this user
             {
-  $lookup: {
-    from: "chats",
-    let: { otherUserId: "$_id" },
-    pipeline: [
-      {
-        $match: {
-          $expr: {
-            $and: [
-              {
-                $in: [
-                  new mongoose.Types.ObjectId(myId),
-                  { $ifNull: ["$members", []] }
-                ]
-              },
-              {
-                $in: [
-                  "$$otherUserId",
-                  { $ifNull: ["$members", []] }
-                ]
-              }
-            ]
-          }
-        }
-      }
-    ],
-    as: "chat"
-  }
-}
-,
-            
+                $lookup: {
+                    from: "chats",
+                    let: { otherUserId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {
+                                            $in: [
+                                                new mongoose.Types.ObjectId(myId),
+                                                { $ifNull: ["$participants", []] }
+                                            ]
+                                        },
+                                        {
+                                            $in: [
+                                                "$$otherUserId",
+                                                { $ifNull: ["$participants", []] }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "chat"
+                }
+            }
+            ,
+
             // 3️⃣ Add flag
             {
                 $addFields: {
@@ -104,12 +104,12 @@ exports.searchUsers = async (req, res) => {
                     chatId: { $arrayElemAt: ["$chat._id", 0] }
                 }
             },
-            
+
             // 4️⃣ Sort: existing chats first
             {
                 $sort: { hasChat: -1, name: 1 }
             },
-            
+
             // 5️⃣ Cleanup
             {
                 $project: {
@@ -118,7 +118,7 @@ exports.searchUsers = async (req, res) => {
             }
         ]);
     }
-    catch(e){
+    catch (e) {
         console.error(`Error searching users: ${e.message}`);
     }
 
@@ -138,7 +138,21 @@ exports.changeProfilePic = async (req, res) => {
         }
     )
 }
-exports.me=async(req,res)=>{
-    const user=req.user;
+exports.me = async (req, res) => {
+    const user = req.user;
     res.json(user);
+}
+exports.update = async (req, res) => {
+    req.user.name = req.body.name;
+    req.user.phone = req.body.phone;
+    req.user.email = req.body.email;
+    req.user.save();
+    res.json(req.user);
+}
+exports.updateProfilePic = async (req, res) => {
+    const user = req.user;
+    const url=upload(req,res);
+    
+    const updatedUser = User.findOneAndUpdate({ _id: user._id }, { profilePic: url });
+    res.json(updatedUser);
 }

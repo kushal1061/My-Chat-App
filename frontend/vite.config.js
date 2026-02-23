@@ -6,6 +6,11 @@ export default defineConfig({
   server: {
     host: '0.0.0.0', // or use true
     port: 3000,
+    allowedHosts: [
+      'localhost',
+      '.ngrok-free.app',   // allows all ngrok subdomains
+    ]
   },
+
   plugins: [react()],
 })

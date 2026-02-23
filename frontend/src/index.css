@@ -1,16 +1,98 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* ─── Design Tokens: Light Theme ─── */
+:root {
+  --surface: #ffffff;
+  --surface-secondary: #f8f9fb;
+  --surface-tertiary: #f1f3f5;
+  --surface-elevated: #ffffff;
+  --surface-inverse: #111827;
+
+  --border: #e4e7eb;
+  --border-secondary: #f1f3f5;
+
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ba3af;
+  --text-inverse: #ffffff;
+
+  --accent: #006dc7;
+  --accent-hover: #0057a1;
+  --accent-subtle: #e0efff;
+  --accent-muted: rgba(0, 109, 199, 0.15);
+
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+
+  --msg-sent: #006dc7;
+  --msg-sent-text: #ffffff;
+  --msg-received: #f1f3f5;
+  --msg-received-text: #111827;
+
+  --sidebar-width: 340px;
+}
+
+/* ─── Design Tokens: Dark Theme ─── */
+.dark {
+  --surface: #0f1117;
+  --surface-secondary: #161922;
+  --surface-tertiary: #1e2130;
+  --surface-elevated: #1e2130;
+  --surface-inverse: #f8f9fb;
+
+  --border: #2a2e3d;
+  --border-secondary: #1e2130;
+
+  --text-primary: #f1f3f5;
+  --text-secondary: #9ba3af;
+  --text-tertiary: #6b7280;
+  --text-inverse: #111827;
+
+  --accent: #36a5ff;
+  --accent-hover: #7cc4ff;
+  --accent-subtle: rgba(54, 165, 255, 0.12);
+  --accent-muted: rgba(54, 165, 255, 0.08);
+
+  --success: #34d399;
+  --danger: #f87171;
+  --warning: #fbbf24;
+
+  --msg-sent: #006dc7;
+  --msg-sent-text: #ffffff;
+  --msg-received: #1e2130;
+  --msg-received-text: #f1f3f5;
+}
+
+/* ─── Base Styles ─── */
 @layer base {
+  * {
+    @apply transition-colors duration-150;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
-    @apply font-sans bg-secondary-50 text-secondary-900 antialiased;
+    @apply font-sans antialiased;
+    background-color: var(--surface-secondary);
+    color: var(--text-primary);
+  }
+
+  /* Focus visible for keyboard nav */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
   }
 }
 
-/* Custom Scrollbar */
+/* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -21,9 +103,56 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-secondary-300 rounded-full;
+  background-color: var(--border);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-secondary-400;
+  background-color: var(--text-tertiary);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ─── Utility Classes ─── */
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .dark .glass {
+    background: rgba(15, 17, 23, 0.8);
+  }
+
+  .glass-subtle {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .dark .glass-subtle {
+    background: rgba(15, 17, 23, 0.6);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, var(--accent), #7c3aed);
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-200;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-1px);
+  }
 }

@@ -1,7 +1,1 @@
-.form{
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    padding: 16px;
-    text-align: center;
-}
+/* App-level overrides — kept minimal, design system lives in index.css */

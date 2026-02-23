@@ -1,34 +1,34 @@
-const websocketClients=require('./clients')
-const Chat=require('../model/chats')
-const Message=require('../model/messages')
-const User=require('../model/user')
+const websocketClients = require('./clients')
+const Chat = require('../model/chats')
+const Message = require('../model/messages')
+const User = require('../model/user')
 const jwt = require("jsonwebtoken")
 const webSocket = require('ws');
-async function sendPendingmsg(phone) {
+async function sendPendingmsg(userId) {
     const userChats = await Chat.find({
-        participants: phone
+        participants: userId
     }).select("_id");
     const chatIds = userChats.map(c => c._id);
     const undeiliveredMessages = await Message.find({
         chatId: { $in: chatIds },
-        deliveredto: { $ne: phone },
-        sender: { $ne: phone }
+        deliveredto: { $ne: userId },
+        sender: { $ne: userId }
     });
     for (const msg of undeiliveredMessages) {
-        if (websocketClients[phone]) {
-            websocketClients[phone].send(JSON.stringify({
+        if (websocketClients[userId]) {
+            websocketClients[userId].send(JSON.stringify({
                 type: "message",
                 data: msg
             }));
             const updateMsg = await Message.findOneAndUpdate(
                 { _id: msg._id },
                 {
-                    $addToSet: { deliveredto: phone },
-                    $set: { [`delivered_at.${phone}`]: new Date() }
+                    $addToSet: { deliveredto: userId },
+                    $set: { [`delivered_at.${userId}`]: new Date() }
                 }
             )
             if (updateMsg) {
-                console.log("Pending message delivered to", phone);
+                console.log("Pending message delivered to", userId);
             }
 
         }
@@ -37,13 +37,14 @@ async function sendPendingmsg(phone) {
 async function handleChat(ws, payload) {
     if (payload.type === 'chat') {
         // save
+        payload=payload.message || payload;
         let chatId = payload.chatId;
         let receivers = [];
         try {
             if (chatId) {
 
                 receivers = await Chat.findOne({ _id: chatId });
-                receivers = receivers.participants.filter(p => p != payload.sender);
+                receivers = receivers.participants.filter(p => p.toString() !== payload.sender.toString());
             }
         }
         catch (e) {
@@ -60,10 +61,11 @@ async function handleChat(ws, payload) {
             sender: payload.sender,
             chatId,
             text: payload.text,
+            type: payload.type || 'text'
         })
         const chatUpdate = await Chat.findOneAndUpdate(
             { _id: chatId },
-            { lastmessage: newMsg._id }
+            { $set: { lastMessage: { text: payload.text, time: new Date() } } }
         );
         console.log(newMsg);
         newMsg.save().then(() => console.log("saved")).catch(e => consol.log(e));
@@ -73,7 +75,8 @@ async function handleChat(ws, payload) {
                 websocketClients[receiver].send(JSON.stringify({
                     type: 'chat',
                     text: payload.text,
-                    sender: payload.sender
+                    sender: payload.sender,
+                    chatId
                 }));
                 const updateMsg = await Message.findOneAndUpdate(
                     { _id: newMsg._id },
@@ -92,25 +95,27 @@ async function handleAuth(ws, payload) {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'abc');
         const user = await User.findOne({ _id: decoded.userId });
+
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            return;
         }
-        const phone = user.phone;
-        websocketClients[phone] = ws;
-        // console.log("User authenticated:", payload.phone);
-        console.log(process.env.JWT_SECRET)
+        user.status = "online";
+        await user.save();
+        const id = user._id;
+        websocketClients[id] = ws;
+        console.log(process.env.JWT_SECRET);
+        sendPendingmsg(user._id);
     }
     catch (e) {
         console.log(e);
     }
-    // verify user
-    sendPendingmsg(payload.phone);
 }
 module.exports = async (ws, payload) => {
     const type = payload.type;
     switch (type) {
         case 'auth':
             handleAuth(ws, payload);
+            break;
         case 'chat':
             handleChat(ws, payload)
             break;

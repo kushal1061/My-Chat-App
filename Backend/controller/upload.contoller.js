@@ -4,6 +4,7 @@ exports.upload=async (req,res)=>{
             const region="ap-south-1"
             const bucket=process.env.BUCKET
             const key="uploads/"+req.body.fileName;
+            const fileurl="djo9j6k3ovsrf.cloudfront.net/"+key;
             console.log(region,bucket,key);
             const url=await getUrl(
                 {
@@ -13,7 +14,7 @@ exports.upload=async (req,res)=>{
                 }
             );
             console.log(url);
-            res.json(url);
+            res.json({url,fileurl});
         }
         catch(e){
             console.log(e);
