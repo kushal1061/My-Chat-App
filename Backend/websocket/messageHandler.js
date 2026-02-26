@@ -68,7 +68,7 @@ async function handleChat(ws, payload) {
             { $set: { lastMessage: { text: payload.text, time: new Date() } } }
         );
         console.log(newMsg);
-        newMsg.save().then(() => console.log("saved")).catch(e => consol.log(e));
+        newMsg.save().then(() => console.log("saved")).catch(e => console.log(e));
         for (const receiver of receivers) {
             if (websocketClients[receiver]) {
                 console.log("iam akasdhj")
@@ -90,12 +90,30 @@ async function handleChat(ws, payload) {
 
     }
 }
+async function handleRead(ws,payload){
+    const {chatId,userId} = payload;
+    const updateMsg = await Message.updateMany(
+        { chatId, sender: { $ne: userId }, readby: { $ne: userId } },
+        {
+            $addToSet: { readby: userId },
+            $set: { [`read_at.${userId}`]: new Date() }
+        }
+    );
+    const chat = await Chat.findById(chatId);
+    const receivers = chat.participants.filter(p => p.toString() !== userId.toString());
+    for(const receiver of receivers){
+        if(websocketClients[receiver]){
+            websocketClients[receiver].send(JSON.stringify({
+                type:"read",
+                chatId,
+                userId
+            }))
+        }}}
 async function handleAuth(ws, payload) {
     const token = payload.token;
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'abc');
         const user = await User.findOne({ _id: decoded.userId });
-
         if (!user) {
             return;
         }
@@ -103,7 +121,6 @@ async function handleAuth(ws, payload) {
         await user.save();
         const id = user._id;
         websocketClients[id] = ws;
-        console.log(process.env.JWT_SECRET);
         sendPendingmsg(user._id);
     }
     catch (e) {
@@ -118,6 +135,12 @@ module.exports = async (ws, payload) => {
             break;
         case 'chat':
             handleChat(ws, payload)
+            break;
+        case 'typing':
+            handleTyping(ws, payload);
+            break;
+        case 'read':
+            handleRead(ws, payload);
             break;
         case 'rtc':
             handleCall(ws, payload);

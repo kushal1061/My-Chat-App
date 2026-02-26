@@ -1,157 +1,195 @@
-import React, { useEffect, useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import { PhoneOff, Mic, MicOff, Video, VideoOff, Phone } from "lucide-react";
 
-function Call() {
-  const wsRef = useRef(null);
-  const pcRef = useRef(null);
-  const iceCandidateQueue = useRef([]);
-  const myId = "userA";
-  const otherId = "userB";
+function Call({
+  Call,
+  startCall,
+  handleOffer,
+  handleAnswer,
+  selectedChatId,
+  localVedioRef,
+  remoteVideoRef,
+  callComing,
+  setCall,
+  onEndCall,
+  callerName,
+  callerPic,
+}) {
+  const [micOn, setMicOn] = useState(true);
+  const [camOn, setCamOn] = useState(true);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [callAccepted, setCallAccepted] = useState(false);
+  const timerRef = useRef(null);
 
-  const flushIceCandidates = async () => {
-    while (iceCandidateQueue.current.length > 0) {
-      const candidate = iceCandidateQueue.current.shift();
-      await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-    }
-  };
-
-  const createPeerConnection = (targetId) => {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        {
-        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "35ec9ed03ed38c6496c2c9ee",
-        credential: "sbC3uskvzrqjOsAV",
-      },
-      ],
-    });
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        wsRef.current.send(JSON.stringify({
-          type: "ice",
-          from: myId,
-          to: targetId,
-          data: event.candidate,
-        }));
-      }
-    };
-
-    pc.ontrack = (event) => {
-      document.getElementById("remoteVideo").srcObject = event.streams[0];
-    };
-
-    pcRef.current = pc;
-    return pc;
-  };
-
-  const handleOffer = async (offer, from) => {
-    const pc = createPeerConnection(from);
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-
-    document.getElementById("localVideo").srcObject = stream;
-    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    await flushIceCandidates();
-
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    wsRef.current.send(JSON.stringify({
-      type: "answer",
-      from: myId,
-      to: from,
-      data: answer,
-    }));
-  };
-
-  const handleAnswer = async (answer) => {
-    if (!pcRef.current) return;
-
-    if (pcRef.current.signalingState !== "have-local-offer") {
-      console.warn("Wrong state:", pcRef.current.signalingState);
-      return;
-    }
-
-    await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-    await flushIceCandidates();
-  };
-
-  // ---------------- WS CONNECT ----------------
+  // Start a timer once the call is accepted
   useEffect(() => {
-    wsRef.current = new WebSocket("wss://kushalpal.duckdns.org/ws");
+    if (callAccepted) {
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds((s) => s + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [callAccepted]);
 
-    wsRef.current.onopen = () => {
-      console.log("WS connected");
-    };
+  const formatTime = (secs) => {
+    const m = String(Math.floor(secs / 60)).padStart(2, "0");
+    const s = String(secs % 60).padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
-    wsRef.current.onmessage = async (e) => {
-      const msg = JSON.parse(e.data);
-        console.log("Received WS message:", msg);
-      switch (msg.type) {
-        case "offer":
-          await handleOffer(msg.data, msg.from);
-          break;
-
-        case "answer":
-          await handleAnswer(msg.data);
-          break;
-
-        case "ice":
-          if (pcRef.current?.remoteDescription) {
-            await pcRef.current.addIceCandidate(new RTCIceCandidate(msg.data));
-          } else {
-            iceCandidateQueue.current.push(msg.data);
-          }
-          break;
-
-        default:
-          break;
+  const toggleMic = () => {
+    setMicOn((prev) => {
+      const next = !prev;
+      if (localVedioRef?.current?.srcObject) {
+        localVedioRef.current.srcObject
+          .getAudioTracks()
+          .forEach((t) => (t.enabled = next));
       }
-    };
-
-    return () => {
-      wsRef.current?.close();
-    };
-  }, []);
-
-  // ---------------- CALLER ----------------
-  const startCall = async () => {
-    const pc = createPeerConnection(otherId);
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
+      return next;
     });
+  };
 
-    document.getElementById("localVideo").srcObject = stream;
-    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+  const toggleCam = () => {
+    setCamOn((prev) => {
+      const next = !prev;
+      if (localVedioRef?.current?.srcObject) {
+        localVedioRef.current.srcObject
+          .getVideoTracks()
+          .forEach((t) => (t.enabled = next));
+      }
+      return next;
+    });
+  };
 
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+  const handleAccept = () => {
+    setCall(true);
+    setCallAccepted(true);
+    handleOffer();
+  };
 
-    wsRef.current.send(JSON.stringify({
-      type: "offer",
-      from: myId,
-      to: otherId,
-      data: offer,
-    }));
+  const handleEndCall = () => {
+    clearInterval(timerRef.current);
+    // Stop all local media tracks
+    if (localVedioRef?.current?.srcObject) {
+      localVedioRef.current.srcObject
+        .getTracks()
+        .forEach((t) => t.stop());
+    }
+    if (typeof onEndCall === "function") onEndCall();
+    else setCall(false);
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>{myId}</h2>
+    <div className="call-overlay">
+      {/* Remote video — full background */}
+      <video
+        ref={remoteVideoRef}
+        autoPlay
+        playsInline
+        className="call-remote-video"
+      />
 
-      <video id="localVideo" autoPlay muted playsInline width="300" />
-      <video id="remoteVideo" autoPlay playsInline width="300" />
+      {/* Gradient overlay at top & bottom */}
+      <div className="call-gradient-top" />
+      <div className="call-gradient-bottom" />
 
-      <br />
-      <button onClick={startCall}>Start Call</button>
+      {/* Top bar */}
+      <div className="call-topbar">
+        <div className="call-caller-info">
+          {callerPic ? (
+            <img
+              src={callerPic}
+              alt={callerName}
+              className="call-caller-avatar"
+            />
+          ) : (
+            <div className="call-caller-avatar call-caller-avatar-fallback">
+              {callerName?.[0]?.toUpperCase() || "?"}
+            </div>
+          )}
+          <div className="call-caller-meta">
+            <span className="call-caller-name">{callerName || "Unknown"}</span>
+            <span className="call-caller-status">
+              {callAccepted
+                ? formatTime(elapsedSeconds)
+                : callComing
+                  ? "Incoming call…"
+                  : "Calling…"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Local video — picture-in-picture */}
+      <div className="call-local-wrapper">
+        <video
+          ref={localVedioRef}
+          autoPlay
+          muted
+          playsInline
+          className="call-local-video"
+        />
+        {!camOn && (
+          <div className="call-cam-off-overlay">
+            <VideoOff size={20} color="#fff" />
+          </div>
+        )}
+      </div>
+
+      {/* Incoming call panel */}
+      {callComing && !callAccepted && (
+        <div className="call-incoming-panel">
+          <p className="call-incoming-label">Incoming video call</p>
+          <div className="call-incoming-actions">
+            <button
+              className="call-btn call-btn-accept"
+              onClick={handleAccept}
+              aria-label="Accept call"
+            >
+              <Phone size={22} />
+            </button>
+            <button
+              className="call-btn call-btn-end"
+              onClick={handleEndCall}
+              aria-label="Decline call"
+            >
+              <PhoneOff size={22} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Controls bar */}
+      {(!callComing || callAccepted) && (
+        <div className="call-controls">
+          <button
+            className={`call-ctrl-btn ${micOn ? "" : "call-ctrl-btn--off"}`}
+            onClick={toggleMic}
+            aria-label={micOn ? "Mute mic" : "Unmute mic"}
+          >
+            {micOn ? <Mic size={20} /> : <MicOff size={20} />}
+            <span className="call-ctrl-label">{micOn ? "Mute" : "Unmute"}</span>
+          </button>
+
+          <button
+            className="call-ctrl-btn call-ctrl-btn--end"
+            onClick={handleEndCall}
+            aria-label="End call"
+          >
+            <PhoneOff size={22} />
+            <span className="call-ctrl-label">End</span>
+          </button>
+
+          <button
+            className={`call-ctrl-btn ${camOn ? "" : "call-ctrl-btn--off"}`}
+            onClick={toggleCam}
+            aria-label={camOn ? "Turn off camera" : "Turn on camera"}
+          >
+            {camOn ? <Video size={20} /> : <VideoOff size={20} />}
+            <span className="call-ctrl-label">{camOn ? "Camera" : "No Cam"}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

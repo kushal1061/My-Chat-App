@@ -5,11 +5,13 @@ const {
   registerUser,
   loginUser,
   searchUsers,
+  updateProfilePic,
   me
 } = require("../controller/user.controller");
 
 router.post("/register",registerUser);
 router.post("/login",loginUser);
 router.post("/searchUsers",auth,searchUsers);
+router.put("/updateProfilePic",auth,updateProfilePic);
 router.get("/me",auth,me);
 module.exports = router;

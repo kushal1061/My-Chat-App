@@ -74,7 +74,7 @@ export default function Sidebar({
         `}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border-secondary">
+                <div className="flex items-center justify-between px-4 py-[10px] border-b border-border-secondary">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
                             <span className="text-text-inverse font-bold text-sm">M</span>
@@ -190,9 +190,16 @@ export default function Sidebar({
                                             </div>
                                             <div className="flex justify-between
  gap-2 text-xs truncate text-text-secondary">
-                                                <div>
-
-                                                    {chat.lastMessage.text || 'No messages yet'}
+                                                <div className="truncate">
+                                                    {(() => {
+                                                        const t = chat.lastMessage?.text || '';
+                                                        const ty = chat.lastMessage?.type;
+                                                        if (ty === 'image' || (ty !== 'document' && ty !== 'video' && (t.startsWith('http') || t.startsWith('s3'))))
+                                                            return '📷 Photo';
+                                                        if (ty === 'video') return '🎬 Video';
+                                                        if (ty === 'document') return '📄 Document';
+                                                        return t || 'No messages yet';
+                                                    })()}
                                                 </div>
                                                 <div>
 

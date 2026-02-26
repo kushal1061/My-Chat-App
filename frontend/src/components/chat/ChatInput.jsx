@@ -22,7 +22,7 @@ export default function ChatInput({
                 fileInputRef.current.accept = 'image/*';
                 break;
             case 'document':
-                fileInputRef.current.accept = '.pdf,.doc,.docx,.txt';
+                fileInputRef.current.accept = '.pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.csv,.zip';
                 break;
             default:
                 fileInputRef.current.accept = '*';
@@ -45,20 +45,20 @@ export default function ChatInput({
     ];
 
     return (
-        <div className="p-3 border-t border-border bg-surface">
-            <div className="flex gap-2 items-end max-w-4xl mx-auto">
+        <div className="p-[14px] border-t border-border bg-surface">
+            <div className="flex gap-2 items-center max-w-4xl mx-auto">
                 {/* Attachment */}
                 <div className="relative">
                     {showAttachMenu && (
-                        <div className="absolute bottom-14 left-0 bg-surface-elevated rounded-xl shadow-float border border-border p-1.5 min-w-[170px] animate-scale-in z-20">
+                        <div className="absolute bottom-[calc(100%+8px)] left-0 bg-surface-elevated rounded-2xl shadow-float border border-border p-1.5 min-w-[180px] animate-scale-in z-30 translate-y-2">
                             {attachOptions.map(({ type, icon: Icon, label, color }) => (
                                 <button
                                     key={type}
                                     onClick={() => handleAttachmentOption(type)}
-                                    className="flex items-center gap-3 w-full px-3 py-2 text-sm text-text-secondary hover:bg-surface-tertiary rounded-lg transition-colors"
+                                    className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-text-secondary hover:bg-surface-tertiary rounded-xl transition-colors"
                                 >
-                                    <div className={`p-1.5 rounded-lg ${color}`}>
-                                        <Icon size={16} />
+                                    <div className={`p-1.5 rounded-lg ${color} flex-shrink-0`}>
+                                        <Icon size={15} />
                                     </div>
                                     <span className="font-medium">{label}</span>
                                 </button>
@@ -106,18 +106,11 @@ export default function ChatInput({
                 <button
                     onClick={onSend}
                     disabled={disabled || !input?.trim()}
-                    className="p-2.5 bg-accent text-text-inverse rounded-xl hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 shadow-soft"
+                    className="p-2.5 bg-accent text-text-inverse rounded-xl hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 shadow-soft mb-1"
                     aria-label="Send message"
                 >
                     <Send size={18} />
                 </button>
-            </div>
-
-            {/* Keyboard hint */}
-            <div className="max-w-4xl mx-auto mt-1.5 px-12">
-                <p className="text-2xs text-text-tertiary">
-                    Press <kbd className="px-1 py-0.5 bg-surface-tertiary rounded text-text-tertiary font-mono text-[9px]">Enter</kbd> to send · <kbd className="px-1 py-0.5 bg-surface-tertiary rounded text-text-tertiary font-mono text-[9px]">Shift+Enter</kbd> for new line
-                </p>
             </div>
         </div>
     );

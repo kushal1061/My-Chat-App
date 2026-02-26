@@ -45,6 +45,7 @@ export default function Profile() {
       });
       setUser(details.data);
       setProfile((prev) => ({ ...prev, ...details.data }));
+      setPhoto(details.data.profilePic);  
     } catch (error) {
       toast.error("Failed to load profile details");
     }
@@ -55,15 +56,33 @@ export default function Profile() {
     setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePhotoChange = (e) => {
+  const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
+    const token = localStorage.getItem("token");
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhoto(reader.result?.toString() || "");
-      toast.success("Photo updated (unsaved)");
-    };
-    reader.readAsDataURL(file);
+    const res = await axios.post(
+      "http://localhost:5000/api/upload",
+      { fileName: file.name },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const { url, fileurl } = res.data;
+    await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+    const updateProfile = await axios.put(
+      "http://localhost:5000/api/user/updateProfilePic",
+      { profilePic: fileurl },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (updateProfile.data.url) {
+      setPhoto(updateProfile.data.url);
+      toast.success("Photo updated successfully!");
+    } else {
+      toast.error("Failed to update profile picture");
+    }
   };
 
   const handleRemovePhoto = () => {

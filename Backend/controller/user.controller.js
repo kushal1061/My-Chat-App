@@ -126,15 +126,18 @@ exports.searchUsers = async (req, res) => {
     console.log(users);
     res.json(users);
 }
-exports.changeProfilePic = async (req, res) => {
+exports.updateProfilePic = async (req, res) => {
     const user = req.body.user;
     const newProfilePic = req.body.profilePic;
-    const updatedUser = User.findOneAndUpdate({ _id: user._id }, { profilePic: newProfilePic });
-    // save profile pic and then do it 
+     const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { $set: { profilePic: newProfilePic } },
+      { new: true }
+    );
     if (updatedUser) res.json(
         {
-            message: "profilePic",
-            url
+            message: "profilePic updated successfully",
+            url: newProfilePic
         }
     )
 }
@@ -143,16 +146,9 @@ exports.me = async (req, res) => {
     res.json(user);
 }
 exports.update = async (req, res) => {
-    req.user.name = req.body.name;
-    req.user.phone = req.body.phone;
-    req.user.email = req.body.email;
+    req.user.name = req.body.name || req.user.name;
+    req.user.phone = req.body.phone || req.user.phone;
+    req.user.email = req.body.email || req.user.email;
     req.user.save();
     res.json(req.user);
-}
-exports.updateProfilePic = async (req, res) => {
-    const user = req.user;
-    const url=upload(req,res);
-    
-    const updatedUser = User.findOneAndUpdate({ _id: user._id }, { profilePic: url });
-    res.json(updatedUser);
 }

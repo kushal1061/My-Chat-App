@@ -68,7 +68,6 @@ function Login() {
           </p>
         </div>
       </div>
-
       {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-12">
         <div className="w-full max-w-sm space-y-8">
@@ -79,14 +78,12 @@ function Login() {
             </div>
             <span className="font-bold text-xl text-text-primary tracking-tight">My Chat</span>
           </div>
-
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-text-primary tracking-tight">Welcome back</h2>
             <p className="text-text-secondary text-sm">
               Sign in to continue your conversations
             </p>
           </div>
-
           <form
             className="space-y-5"
             onSubmit={(e) => {
@@ -115,7 +112,6 @@ function Login() {
               Sign In
             </Button>
           </form>
-
           <p className="text-center text-sm text-text-secondary">
             New here?{' '}
             <Link
@@ -130,5 +126,4 @@ function Login() {
     </div>
   );
 }
-
 export default Login;

@@ -10,9 +10,7 @@ exports.getChat = async (req, res) => {
 }
 exports.getChats = async (req, res) => {
     const user = req.body.user;
-    console.log(user);
     const userId = user._id;
-
     const chats = await Chat
         .find({ participants: userId })
         .sort({ updatedAt: -1 })
@@ -32,7 +30,6 @@ exports.getChats = async (req, res) => {
             return chat;
         })
     );
-    console.log(chats);
     res.json(chats);
 }
 exports.createChat = async (req, res) => {

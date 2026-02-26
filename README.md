@@ -14,6 +14,7 @@ A full-stack real-time chat application with support for one-on-one and group co
 - **User Search** — Find and start conversations with other users
 - **Offline Message Delivery** — Pending messages are delivered when a user reconnects
 - **Message Status Tracking** — Track delivered and read receipts per message
+- **Video & Audio Calls** — Real-time peer-to-peer video and audio calls powered by **WebRTC**, with mic/camera toggle controls, picture-in-picture local preview, live call timer, and an incoming-call accept/decline panel
 - **Modern UI** — Clean, responsive interface with animations (Framer Motion), toast notifications, and auto-growing text input
 
 ---
@@ -27,6 +28,7 @@ A full-stack real-time chat application with support for one-on-one and group co
 | **Database** | MongoDB (Mongoose ODM)                                          |
 | **Storage**  | AWS S3 (presigned upload URLs)                                  |
 | **Auth**     | JSON Web Tokens, bcryptjs                                       |
+| **Calling**  | WebRTC (RTCPeerConnection), STUN (Google), TURN (Metered relay)  |
 
 ---
 
@@ -162,21 +164,62 @@ The app will be available at **`http://localhost:5173`**.
 | POST   | `/createChat` | ✅   | Create a new chat            |
 
 ### Upload Routes — `/api`
-
 | Method | Endpoint  | Auth | Description                        |
 | ------ | --------- | ---- | ---------------------------------- |
 | POST   | `/upload` | ✅   | Get a presigned S3 URL for upload  |
 
 ### WebSocket Events
-
-| Event Type | Direction       | Description                              |
-| ---------- | --------------- | ---------------------------------------- |
-| `auth`     | Client → Server | Authenticate the WebSocket connection    |
-| `chat`     | Bidirectional   | Send/receive chat messages               |
-| `message`  | Server → Client | Deliver pending (offline) messages       |
+| Event Type | Direction       | Description                                        |
+| ---------- | --------------- | -------------------------------------------------- |
+| `auth`     | Client → Server | Authenticate the WebSocket connection              |
+| `chat`     | Bidirectional   | Send/receive chat messages                         |
+| `message`  | Server → Client | Deliver pending (offline) messages                 |
+| `offer`    | Client → Server | WebRTC call offer sent by the caller               |
+| `answer`   | Client → Server | WebRTC answer sent by the callee after accepting   |
+| `ice`      | Bidirectional   | Exchange ICE candidates between peers              |
+| `rtc`      | Bidirectional   | General RTC signaling envelope                     |
 
 ---
 
+## 📞 Video & Audio Calls
+
+Real-time peer-to-peer calls are implemented using the **WebRTC** API, with call signaling relayed through the existing WebSocket server.
+
+### How It Works
+
+1. **Caller** clicks the call button → `startCall()` captures local media (`getUserMedia`), creates an `RTCPeerConnection`, and sends an **`offer`** event over WebSocket.
+2. **Callee** receives the offer via WebSocket → an incoming-call panel is shown. On accept, `handleOffer()` creates an answer and sends it back as an **`answer`** event.
+3. Both peers exchange **`ice`** candidates through the WebSocket relay until a direct media path is established.
+4. Audio/video tracks stream directly peer-to-peer once the connection is established.
+
+### Features
+
+| Feature                    | Details                                                                 |
+| -------------------------- | ----------------------------------------------------------------------- |
+| **Video Call**             | Full-screen remote video with local picture-in-picture preview          |
+| **Audio Call**             | Audio-only mode by toggling the camera off before/during a call         |
+| **Mic Toggle**             | Mute/unmute microphone mid-call without dropping the connection         |
+| **Camera Toggle**          | Turn camera on/off mid-call; a "camera off" overlay appears locally     |
+| **Live Call Timer**        | Elapsed call duration displayed in `MM:SS` format once call is accepted |
+| **Incoming Call Panel**    | Accept (green) / Decline (red) buttons shown to the callee              |
+| **ICE Candidate Queuing**  | Candidates queued and flushed after remote description is set           |
+
+### ICE / TURN Configuration
+
+```js
+iceServers: [
+  { urls: "stun:stun.l.google.com:19302" },          // Google STUN — NAT traversal
+  {
+    urls: "turn:global.relay.metered.ca:80?transport=tcp", // Metered TURN relay fallback
+    username: "<username>",
+    credential: "<credential>",
+  },
+]
+```
+
+> **Note:** Replace the TURN credentials with your own from [Metered.ca](https://www.metered.ca/) or any other TURN provider before deploying.
+
+---
 ## 🔐 Environment Variables
 
 ### Backend (`Backend/.env`)
