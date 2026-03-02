@@ -11,13 +11,19 @@ import { useChats } from "../hooks/useChats";
 import { useMessages } from "../hooks/useMessages";
 import Call from "./Call";
 import useCall from "../hooks/call";
+import { useNavigate } from "react-router-dom";
 export default function Home() {
   const [selectedChatId, setSelectedChatId] = useState();
   const [zoomedImage, setZoomedImage] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const navigate = useNavigate();
   // Keep a ref so async WS callbacks always see the current chat id
   const selectedChatIdRef = useRef(selectedChatId);
   useEffect(() => {
+    const token=localStorage.getItem("token");
+    if(!token){
+      navigate("/login");
+    }
     selectedChatIdRef.current = selectedChatId;
   }, [selectedChatId]);
   const me = localStorage.getItem("userId");
