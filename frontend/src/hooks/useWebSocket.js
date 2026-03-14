@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 
+const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
+
 /**
  * Manages the WebSocket connection lifecycle.
  * @param {function} onMessage - Called with the parsed message object on every ws.onmessage event.
@@ -10,7 +12,7 @@ export function useWebSocket(onMessage) {
 
     useEffect(() => {
         const token = localStorage.getItem("token");
-        const ws = new WebSocket("ws://localhost:8000");
+        const ws = new WebSocket(WS_URL);
         wsRef.current = ws;
 
         ws.onopen = () => {

@@ -1,6 +1,8 @@
 import { useState, useCallback } from "react";
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+
 /**
  * Manages the chat list, user search, and unread counts.
  */
@@ -18,7 +20,7 @@ export function useChats() {
     const getChats = useCallback(() => {
         axios
             .post(
-                "http://localhost:5000/api/getChats",
+                `${API_BASE_URL}/api/getChats`,
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             )
@@ -40,7 +42,7 @@ export function useChats() {
             setIsSearching(true);
             axios
                 .post(
-                    "http://localhost:5000/api/user/searchUsers",
+                    `${API_BASE_URL}/api/user/searchUsers`,
                     { query },
                     { headers: { Authorization: `Bearer ${token}` } }
                 )
@@ -62,7 +64,7 @@ export function useChats() {
             }
             axios
                 .post(
-                    "http://localhost:5000/api/createChat",
+                    `${API_BASE_URL}/api/createChat`,
                     { participants: [user._id, me] },
                     { headers: { Authorization: `Bearer ${token}` } }
                 )

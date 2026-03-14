@@ -1,18 +1,31 @@
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 require("dotenv").config();
 const User = require("../model/user");
 const { upload } = require("./upload.contoller");
 exports.registerUser = async (req, res) => {
     const { name, password, email, phone } = req.body;
-    const newUser = new User({
-        name,
-        password,
-        email,
-        phone,
-        createdAt: Date.now()
-    });
+
+    if (!name || !password || !email || !phone) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+
     try {
+        const existingUser = await User.findOne({
+            $or: [{ name }, { email }, { phone }]
+        });
+        if (existingUser) {
+            return res.status(409).json({ message: "User already exists" });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({
+            name,
+            password: hashedPassword,
+            email,
+            phone,
+            createdAt: Date.now()
+        });
         await newUser.save();
         console.log(`Registering user: ${name}`);
         return res.status(200).json({ message: "User registered successfully" });
@@ -24,26 +37,35 @@ exports.registerUser = async (req, res) => {
 };
 exports.loginUser = async (req, res) => {
     const { name, password } = req.body;
-    const user = await User.findOne({ name });// find
-    console.log(user);
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
+    if (!name || !password) {
+        return res.status(400).json({ message: "Name and password are required" });
     }
-    if (user.password === password) {
+
+    try {
+        const user = await User.findOne({ name });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: "Invalid password" });
+        }
         console.log(`User logged in: ${name}`);
         const userId = user._id;
         const token = jwt.sign(
-            { userId }, process.env.JWT_SECRET || 'abc'
-        )
-        res.status(200).json({
+            { userId },
+            process.env.JWT_SECRET || "abc",
+            { expiresIn: "7d" }
+        );
+        return res.status(200).json({
             token,
             phone: user.phone,
             userId: user._id,
-            message: " logged in successfully"
-        })
-    }
-    else {
-        return res.status(401).json({ message: "Invalid password" });
+            message: "Logged in successfully"
+        });
+    } catch (e) {
+        console.error(`Error logging in user: ${e.message}`);
+        return res.status(500).json({ message: "Error logging in user" });
     }
 }
 exports.searchUsers = async (req, res) => {

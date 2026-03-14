@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+
 /**
  * Manages messages for the currently selected chat.
  * @param {{ wsRef: React.MutableRefObject<WebSocket|null>, selectedChatId: string|undefined, onAfterSend: (chatId:string, text:string)=>void }}
@@ -23,7 +25,7 @@ export function useMessages({ wsRef, selectedChatId, onAfterSend }) {
         (chatId) => {
             axios
                 .post(
-                    "http://localhost:5000/api/getChat",
+                    `${API_BASE_URL}/api/getChat`,
                     { chatId },
                     { headers: { Authorization: `Bearer ${token}` } }
                 )
@@ -64,7 +66,7 @@ export function useMessages({ wsRef, selectedChatId, onAfterSend }) {
             else if (file.type.startsWith('video/')) msgType = 'video';
 
             const res = await axios.post(
-                "http://localhost:5000/api/upload",
+                `${API_BASE_URL}/api/upload`,
                 { fileName: file.name },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

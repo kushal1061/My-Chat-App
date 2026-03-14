@@ -12,6 +12,7 @@ import { useMessages } from "../hooks/useMessages";
 import Call from "./Call";
 import useCall from "../hooks/call";
 import { useNavigate } from "react-router-dom";
+
 export default function Home() {
   const [selectedChatId, setSelectedChatId] = useState();
   const [zoomedImage, setZoomedImage] = useState(null);
