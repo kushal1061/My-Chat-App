@@ -22,7 +22,7 @@ function Login() {
 
     setIsLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/user/login', {
+      const res = await axios.post(import.meta.env.VITE_API_URL + 'api/user/login', {
         name: name.current.value,
         password: pass.current.value,
       });
