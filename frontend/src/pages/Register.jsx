@@ -22,7 +22,6 @@ function Register() {
       toast.error('Please fill in all fields');
       return;
     }
-
     setIsLoading(true);
     try {
       const res = await axios.post('http://localhost:5000/api/user/register', {

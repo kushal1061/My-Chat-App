@@ -2,12 +2,9 @@ const WebSocket = require('ws');
 const websocketClients = require('./clients')
 const handleMessage = require("./messageHandler")
 const User = require('../model/user')
-module.exports = () => {
+module.exports = (server) => {
     const port = process.env.WS_PORT ? Number(process.env.WS_PORT) : 8000;
-    const wss = new WebSocket.Server({
-        host: '0.0.0.0',  // Listen on all network interfaces
-        port
-    })
+    const wss = new WebSocket.Server({ server });
     wss.on('error', (err) => {
         console.error('WebSocket server error:', err);
         if (err && err.code === 'EADDRINUSE') {
