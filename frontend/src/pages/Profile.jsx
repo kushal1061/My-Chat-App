@@ -40,7 +40,7 @@ export default function Profile() {
   const getDetails = async () => {
     const token = localStorage.getItem("token");
     try {
-      const details = await axios.get("http://localhost:5000/api/user/me", {
+      const details = await axios.get( import.meta.env.VITE_BASE_URL + '/api/user/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUser(details.data);
@@ -61,7 +61,7 @@ export default function Profile() {
     const token = localStorage.getItem("token");
     if (!file) return;
     const res = await axios.post(
-      "http://localhost:5000/api/upload",
+      import.meta.env.VITE_BASE_URL + '/api/upload',
       { fileName: file.name },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -72,7 +72,7 @@ export default function Profile() {
       body: file,
     });
     const updateProfile = await axios.put(
-      "http://localhost:5000/api/user/updateProfilePic",
+      import.meta.env.VITE_BASE_URL + '/api/user/updateProfilePic',
       { profilePic: fileurl },
       { headers: { Authorization: `Bearer ${token}` } }
     );

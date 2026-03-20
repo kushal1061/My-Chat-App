@@ -24,7 +24,7 @@ function Register() {
     }
     setIsLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/user/register', {
+      const res = await axios.post(import.meta.env.VITE_BASE_URL + '/api/user/register', {
         name: name.current.value,
         password: pass.current.value,
         phone: phoneRef.current.value,
