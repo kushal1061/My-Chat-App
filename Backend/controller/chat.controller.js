@@ -37,8 +37,16 @@ exports.createChat = async (req, res) => {
     if(participants.length===2){
         const existingChat = await Chat.findOne({ participants: { $all: participants, $size: participants.length } });
         const messages = await Message.find({ chatId: existingChat._id }).sort({ timestamp: -1 }).limit(100);
-        
+
         if(existingChat){
+            const receiverId = existingChat.participants.find(p => !participants.includes(p.toString()));
+            const receiver = await User.findById(
+                receiverId,
+                { name: 1, profilePic: 1, status: 1 }
+            );
+            existingChat.name = receiver?.name || "Unknown";
+            existingChat.profilePic = receiver?.profilePic || "";
+            existingChat.status = receiver?.status || "offline";
         return res.json({
             chat: existingChat,
             messages: messages
