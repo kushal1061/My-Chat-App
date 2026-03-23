@@ -159,7 +159,7 @@ export default function Sidebar({
                         </div>
                     ) : (
                         <div className="p-2 space-y-0.5">
-                            {filteredChats.map((chat) => {
+                            {chats.map((chat) => {
                                 const isActive = chat._id === selectedChatId;
                                 return (
                                     <div

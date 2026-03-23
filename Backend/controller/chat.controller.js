@@ -34,6 +34,17 @@ exports.getChats = async (req, res) => {
 }
 exports.createChat = async (req, res) => {
     const participants = req.body.participants;
+    if(participants.length===2){
+        const existingChat = await Chat.findOne({ participants: { $all: participants, $size: participants.length } });
+        const messages = await Message.find({ chatId: existingChat._id }).sort({ timestamp: -1 }).limit(100);
+        
+        if(existingChat){
+        return res.json({
+            chat: existingChat,
+            messages: messages
+        });}
+    }
+
     const newChat = new Chat({
         participants: participants
     });
