@@ -49,7 +49,7 @@ export function useMessages({ wsRef, selectedChatId, onAfterSend }) {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify(msg));
         }
-        setMessages((prev) => [msg, ...prev]);
+        setMessages((prev) => [msg.message, ...prev]);
         onAfterSend?.(selectedChatId, input);
         setInput("");
     }, [input, selectedChatId, me, wsRef, onAfterSend]);
@@ -86,7 +86,7 @@ export function useMessages({ wsRef, selectedChatId, onAfterSend }) {
                 },
             };
             wsRef.current?.send(JSON.stringify(msg));
-            setMessages((prev) => [msg, ...prev]);
+            setMessages((prev) => [msg.message, ...prev]);
         },
         [token, me, selectedChatId, wsRef]
     );

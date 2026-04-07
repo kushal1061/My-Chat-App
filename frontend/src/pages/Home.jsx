@@ -52,8 +52,16 @@ export default function Home() {
             appendMessage(data);
           }
           const incomingChatId = data.chatId || data.message?.chatId;
-          if (incomingChatId && incomingChatId !== selectedChatIdRef.current) {
-            incrementUnread(incomingChatId);
+          if (incomingChatId) {
+            // Update sidebar order with latest message text
+            const msgText = data.message?.text || data.text || "";
+            sortChatsAfterMessage(incomingChatId, msgText, () => {
+              // If the chat wasn't found in the list (new conversation), refetch
+              getChats();
+            });
+            if (incomingChatId !== selectedChatIdRef.current) {
+              incrementUnread(incomingChatId);
+            }
           }
         }
         switch (data.type) {
@@ -77,7 +85,7 @@ export default function Home() {
             break;
         }
       },
-      [incrementUnread]
+      [incrementUnread, sortChatsAfterMessage, getChats]
     )
   );
   const { call, setCall, callComing, setCallComing, callOngoing, setCallOngoing, startCall, handleOffer, handleAnswer, localVedioRef, remoteVideoRef, pcRef, iceCandidateQueue, handleComingCall } = useCall(wsRef);

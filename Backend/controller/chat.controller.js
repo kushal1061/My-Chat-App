@@ -30,15 +30,16 @@ exports.getChats = async (req, res) => {
             return chat;
         })
     );
-    res.json(chats);
+    res.json(updatedChats);
 }
 exports.createChat = async (req, res) => {
     const participants = req.body.participants;
     if(participants.length===2){
         const existingChat = await Chat.findOne({ participants: { $all: participants, $size: participants.length } });
-        const messages = await Message.find({ chatId: existingChat._id }).sort({ timestamp: -1 }).limit(100);
+        
 
         if(existingChat){
+            const messages = await Message.find({ chatId: existingChat._id }).sort({ timestamp: -1 }).limit(100);
             const receiverId = existingChat.participants.find(p => !participants.includes(p.toString()));
             const receiver = await User.findById(
                 receiverId,
@@ -57,8 +58,18 @@ exports.createChat = async (req, res) => {
         participants: participants
     });
     const savedChat = await newChat.save();
+    const chatObj = savedChat.toObject();
+    // Populate receiver info for single chats
+    if (participants.length === 2) {
+        const userId = req.body.user._id.toString();
+        const receiverId = participants.find(p => p.toString() !== userId);
+        const receiver = await User.findById(receiverId, { name: 1, profilePic: 1, status: 1 });
+        chatObj.name = receiver?.name || "Unknown";
+        chatObj.profilePic = receiver?.profilePic || "";
+        chatObj.status = receiver?.status || "offline";
+    }
     res.json({
-        chat: newChat,
+        chat: chatObj,
         messages: []
     });
 }

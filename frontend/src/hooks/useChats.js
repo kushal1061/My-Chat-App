@@ -81,10 +81,14 @@ export function useChats() {
     );
 
     // ── Move the chat with the latest message to the top ──
-    const sortChatsAfterMessage = useCallback((chatId, text) => {
+    const sortChatsAfterMessage = useCallback((chatId, text, onNotFound) => {
         setChats((prevChats) => {
             const updatedChat = prevChats.find((chat) => chat._id === chatId);
-            if (!updatedChat) return prevChats;
+            if (!updatedChat) {
+                // Chat not in list — schedule a refetch
+                if (onNotFound) setTimeout(onNotFound, 0);
+                return prevChats;
+            }
             const nextChat = {
                 ...updatedChat,
                 lastMessage: {
